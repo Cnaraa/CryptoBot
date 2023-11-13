@@ -5,6 +5,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from config import TOKEN
 from keyboards import *
+from check_token import check_token
 
 
 storage = MemoryStorage()
@@ -43,9 +44,13 @@ async def add_new_token(message: types.Message, state : FSMContext):
 
 @dp.message_handler(state=Actions.add_token)
 async def add_new_token_in_database(message: types.Message, state: FSMContext):
-    await state.update_data(token=message.text.upper())
-    await message.answer('Введите количество монет')
-    await state.set_state(Actions.add_token_count)
+    if check_token(message.text.upper()):
+        await state.update_data(token=message.text.upper())
+        await message.answer('Введите количество монет')
+        await state.set_state(Actions.add_token_count)
+    else:
+        await message.answer('Монета не найдена на бирже')
+        await state.finish()
 
 
 @dp.message_handler(state=Actions.add_token_count)
