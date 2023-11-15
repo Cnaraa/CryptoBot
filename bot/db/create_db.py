@@ -23,7 +23,7 @@ with sqlite3.connect('crypto.db') as connection:
   """)
 '''
 
-def check_in_database(new_token):
+def check_id_in_database(new_token):
   with sqlite3.connect('crypto.db') as connection:
     cursor = connection.cursor()
     cursor.execute("""
@@ -31,11 +31,13 @@ def check_in_database(new_token):
 """, (new_token['user_id'],))
     result = cursor.fetchone()
     if result is None:
-        cursor.execute("""
-            INSERT INTO users VALUES (NULL, (?))
+      cursor.execute("""
+          INSERT INTO users VALUES (NULL, (?))
 """, (new_token['user_id'],))
-        connection.commit()
-    add_new_token(new_token)
+      connection.commit()
+      add_new_token(new_token)
+    else:
+      check_token_id_portfolio(new_token)
   return True
 
 
@@ -46,6 +48,28 @@ def add_new_token(new_token):
      cursor.execute("""
         INSERT INTO users_portfolio (id, user_id, token_name, token_amount, total_costs)
         VALUES (NULL, ?, ?, ?, ?)
-""", (new_token['user_id'], new_token['token_name'], new_token['token_amount'], new_token['token_price']))
+""", (new_token['user_id'], new_token['token_name'], new_token['token_amount'], (new_token['token_price'] * new_token['token_amount'])))
      connection.commit()
+  return True
+
+
+def check_token_id_portfolio(new_token):
+  with sqlite3.connect('crypto.db') as connection:
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT * FROM users_portfolio WHERE user_id = (?) and token_name = (?)
+""", (new_token['user_id'], new_token['token_name']))
+    result = cursor.fetchone()
+    if result is None:
+      add_new_token(new_token)
+    else:
+      token_amount = result[3] + new_token['token_amount']
+      total_costs = result[4] + (new_token['token_price'] * new_token['token_amount'])
+      cursor.execute("""
+          UPDATE users_portfolio SET token_amount = (?) WHERE user_id = (?) and token_name = (?)
+""", (token_amount, new_token['user_id'], new_token['token_name']))
+      cursor.execute("""
+          UPDATE users_portfolio SET total_costs = (?) WHERE user_id = (?) and token_name = (?)
+""", (total_costs, new_token['user_id'], new_token['token_name']))
+      connection.commit()
   return True

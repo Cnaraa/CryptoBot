@@ -47,7 +47,7 @@ async def add_new_token(message: types.Message, state : FSMContext):
 
 @dp.message_handler(state=Actions.add_token)
 async def add_new_token_in_database(message: types.Message, state: FSMContext):
-    if check_token(message.text.upper()):
+    if True:#check_token(message.text.upper()):
         await state.update_data(token_name=message.text.upper())
         await message.answer('Введите количество монет')
         await state.set_state(Actions.add_token_amount)
@@ -73,7 +73,7 @@ async def add_token_price(message: types.Message, state: FSMContext):
         token_price = float(token_price)
     await state.update_data(token_price=token_price)
     new_token = await state.get_data()
-    result = check_in_database(new_token)
+    result = check_id_in_database(new_token)
     if result:
         await bot.send_message(chat_id=message.from_user.id,
                            text=f"Монета {new_token['token_name']} количеством {new_token['token_amount']} по цене {new_token['token_price']} добавлена в ваш протфель")
