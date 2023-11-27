@@ -5,6 +5,6 @@ def check_token(token):
   token = token + '/USDT'
   try:
     ticker = exchange.fetch_ticker(token)
-    return True
+    return ticker['last']
   except:
     return False

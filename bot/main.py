@@ -16,10 +16,15 @@ dp = Dispatcher(bot, storage=storage)
 
 class Actions(StatesGroup):
 
+    
+    choose_actions = State()
+    #received_token = State()
     add_token = State()
     add_token_amount = State()
     add_token_price = State()
     add_token_in_database = State()
+    buy_token = State()
+    sell_token = State()
 
 
 async def on_startup(_):
@@ -39,10 +44,41 @@ async def show_portfolio(message: types.Message):
     await message.answer('Тут будет состояние вашего портфеля')
 
 
-@dp.message_handler(Text(equals='Добавить монету'))
+@dp.message_handler(Text(equals='Добавить операцию'))
 async def add_new_token(message: types.Message, state : FSMContext):
-    await message.answer('Введите название монеты')
-    await state.set_state(Actions.add_token)
+    await bot.send_message(chat_id=message.from_user.id,
+                           text="Выберите операцию",
+                           reply_markup=actions_keyboard)
+    await state.set_state(Actions.choose_actions)
+    
+
+@dp.message_handler(state=Actions.choose_actions)
+async def add_new_token_in_database(message: types.Message, state: FSMContext):
+    await state.update_data(user_id=int(message.from_user.id))
+    if message.text == "Депозит":
+        await state.update_data(action='add')
+        await state.set_state(Actions.add_token)
+    elif message.text == "Купить":
+        await state.update_data(action='buy')
+        await state.set_state(Actions.buy_token)
+    else:
+        await state.update_data(action='sell')
+        await state.set_state(Actions.sell_token)
+    await message.answer("Введите название монеты")
+
+
+@dp.message_handler(state=Actions.sell_token)
+async def add_new_token_in_database(message: types.Message, state: FSMContext):
+    await state.update_data(token_name=message.text.upper())
+    new_token = await state.get_data()
+    if check_token_in_portfolio(new_token):
+        await message.answer("Введите количество монет")
+        await state.set_state(Actions.add_token_amount)
+    else:
+        await bot.send_message(chat_id=message.from_user.id,
+                               text=f"Монеты {new_token['token_name']} нет в вашем портфеле",
+                               reply_markup=main_keyboard)
+        await state.finish()
 
 
 @dp.message_handler(state=Actions.add_token)
@@ -59,7 +95,6 @@ async def add_new_token_in_database(message: types.Message, state: FSMContext):
 @dp.message_handler(state=Actions.add_token_amount)
 async def add_token_amount(message: types.Message, state: FSMContext):
     await state.update_data(token_amount=float(message.text))
-    await state.update_data(user_id=int(message.from_user.id))
     await message.answer('Введите цену монеты')
     await state.set_state(Actions.add_token_price)
 
@@ -73,14 +108,18 @@ async def add_token_price(message: types.Message, state: FSMContext):
         token_price = float(token_price)
     await state.update_data(token_price=token_price)
     new_token = await state.get_data()
-    result = check_id_in_database(new_token)
-    if result:
-        await bot.send_message(chat_id=message.from_user.id,
-                           text=f"Монета {new_token['token_name']} количеством {new_token['token_amount']} по цене {new_token['token_price']} добавлена в ваш протфель")
-    else:
-        await bot.send_message(chat_id=message.from_user.id,
-                               text='Ошибка')
-    await state.finish()
+    if new_token['action'] == 'add':
+        result = check_id_in_database(new_token)
+        if result:
+            await bot.send_message(chat_id=message.from_user.id,
+                            text=f"Монета {new_token['token_name']} количеством {new_token['token_amount']} по цене {new_token['token_price']} добавлена в ваш протфель",
+                            reply_markup=main_keyboard)
+        else:
+            await bot.send_message(chat_id=message.from_user.id,
+                                text='Ошибка')
+        await state.finish()
+    elif new_token['action'] == 'sell':
+        sell_token(new_token)
 
 
 if __name__ == '__main__':
