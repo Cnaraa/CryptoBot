@@ -61,14 +61,16 @@ def check_token_in_portfolio(new_token):
           SELECT token_amount FROM users_portfolio WHERE user_id = (?) and token_name = (?)
 """, (new_token['user_id'], 'USDT'))
       result = cursor.fetchone()
-      if result > (new_token['token_price'] * new_token['token_amount']):
+      if result[0] > (new_token['token_price'] * new_token['token_amount']):
         cursor.execute("""
-            UPDATE users_portfolio SET token_amount = (?), total_costs = (?)
-""", ((result[0] - (new_token['token_price'] * new_token['token_amount'])),
-      (result[0] - (new_token['token_price'] * new_token['token_amount']))))
+            UPDATE users_portfolio SET token_amount = (?), total_costs = (?) WHERE user_id = (?) and token_name = (?)
+""", (result[0] - (new_token['token_price'] * new_token['token_amount']),
+      result[0] - (new_token['token_price'] * new_token['token_amount']),
+      new_token['user_id'],
+      'USDT',))
         connection.commit()
         cursor.execute("""
-            SELECT * FROM users_portdolio WHERE user_id = (?) and token_name = (?)
+            SELECT * FROM users_portfolio WHERE user_id = (?) and token_name = (?) 
 """, (new_token['user_id'], new_token['token_name']))  
         result = cursor.fetchone()
         if result: # TODO - repeat func
@@ -141,3 +143,26 @@ def sell_token(new_token):
   """, (new_token['user_id'], 'USDT', (new_token['token_amount'] * new_token['token_price']),
         (new_token['token_amount'] * new_token['token_price'])))
     connection.commit()
+  return True
+
+
+def get_user_portfolio(user_id):
+  with sqlite3.connect('crypto.db') as connection:
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT * FROM users_portfolio WHERE user_id = (?)
+""", (user_id, ))
+    result = cursor.fetchall()
+    user_portfolio = {}
+    token = {}
+    for token_info in result:
+      token['token_amount'] = token_info[3]
+      last_token_price = check_token(token_info[2])
+      token_value = token_info[3] * last_token_price
+      token['token_value'] = token_value
+      token['financial_results'] = round(token_value - token_info[4], 2)
+      token['financial_results_percentages'] = round(((token_value - token_info[4]) / token_info[4]) * 100, 2)
+      user_portfolio[token_info[2]] = token
+      token = {}
+    print(user_portfolio)
+    return user_portfolio

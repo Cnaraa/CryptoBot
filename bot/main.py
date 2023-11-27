@@ -18,13 +18,13 @@ class Actions(StatesGroup):
 
     
     choose_actions = State()
-    #received_token = State()
     add_token = State()
     add_token_amount = State()
     add_token_price = State()
     add_token_in_database = State()
     buy_token = State()
     sell_token = State()
+    portfolio = State()
 
 
 async def on_startup(_):
@@ -41,8 +41,12 @@ async def start(message: types.Message):
 
 @dp.message_handler(Text(equals='Портфель'))
 async def show_portfolio(message: types.Message):
-    await message.answer('Тут будет состояние вашего портфеля')
-
+    portfolio = get_user_portfolio(int(message.from_user.id))
+    message_text = 'Монета - Количество - Общая стоимость - Финансовый результат\n'
+    for token in portfolio:
+        token_info = portfolio[token]
+        message_text += f"{token} - {token_info['token_amount']} - {token_info['token_value']}$ - {token_info['financial_results']}$ ({token_info['financial_results_percentages']}%)\n"
+    await message.answer(message_text)
 
 @dp.message_handler(Text(equals='Добавить операцию'))
 async def add_new_token(message: types.Message, state : FSMContext):
@@ -115,6 +119,7 @@ async def add_token_price(message: types.Message, state: FSMContext):
         token_price = float(token_price)
     await state.update_data(token_price=token_price)
     new_token = await state.get_data()
+    print(new_token)
     if new_token['action'] == 'add':
         result = check_id_in_database(new_token)
         if result:
