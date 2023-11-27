@@ -81,6 +81,13 @@ async def add_new_token_in_database(message: types.Message, state: FSMContext):
         await state.finish()
 
 
+@dp.message_handler(state=Actions.buy_token)
+async def add_new_token_in_database(message: types.Message, state: FSMContext):
+    await state.update_data(token_name=message.text.upper())
+    await message.answer("Введите количество монет")
+    await state.set_state(Actions.add_token_amount)
+
+
 @dp.message_handler(state=Actions.add_token)
 async def add_new_token_in_database(message: types.Message, state: FSMContext):
     if True:#check_token(message.text.upper()):
@@ -117,9 +124,21 @@ async def add_token_price(message: types.Message, state: FSMContext):
         else:
             await bot.send_message(chat_id=message.from_user.id,
                                 text='Ошибка')
-        await state.finish()
     elif new_token['action'] == 'sell':
-        sell_token(new_token)
+        if sell_token(new_token):
+            await bot.send_message(chat_id=message.from_user.id,
+                                   text=f"Монета {new_token['token_name']} в количестве {new_token['token_amount']} успешно продана",
+                                   reply_markup=main_keyboard)
+    elif new_token['action'] == 'buy':
+        if check_token_in_portfolio(new_token):
+            await bot.send_message(chat_id=message.from_user.id,
+                                   text=f"Монета {new_token['token_name']} в количестве {new_token['token_amount']} добавлена в ваш портфель",
+                                   reply_markup=main_keyboard)
+        else:
+            await bot.send_message(chat_id=message.from_user.id,
+                                   text='В вашем портфеле недостаточно средств',
+                                   reply_markup=main_keyboard)
+    await state.finish()
 
 
 if __name__ == '__main__':
