@@ -42,10 +42,11 @@ async def start(message: types.Message):
 @dp.message_handler(Text(equals='Портфель'))
 async def show_portfolio(message: types.Message):
     portfolio = get_user_portfolio(int(message.from_user.id))
-    message_text = 'Монета - Количество - Общая стоимость - Финансовый результат\n'
+    message_text = 'Монета | Количество | Общая стоимость | Финансовый результат\n'
     for token in portfolio:
         token_info = portfolio[token]
-        message_text += f"{token} - {token_info['token_amount']} - {token_info['token_value']}$ - {token_info['financial_results']}$ ({token_info['financial_results_percentages']}%)\n"
+        message_text += f"{token} | {token_info['token_amount']} | {token_info['token_value']}$ | {token_info['financial_results']}$ ({token_info['financial_results_percentages']}%)\n"
+        message_text += '-----------------------------------\n'
     await message.answer(message_text)
 
 @dp.message_handler(Text(equals='Добавить операцию'))
