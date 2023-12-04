@@ -16,7 +16,6 @@ dp = Dispatcher(bot, storage=storage)
 
 class Actions(StatesGroup):
 
-    
     choose_actions = State()
     add_token = State()
     add_token_amount = State()
@@ -45,7 +44,8 @@ async def show_portfolio(message: types.Message):
     message_text = 'Монета | Количество | Общая стоимость | Финансовый результат\n'
     for token in portfolio:
         token_info = portfolio[token]
-        message_text += f"{token} | {token_info['token_amount']} | {token_info['token_value']}$ | {token_info['financial_results']}$ ({token_info['financial_results_percentages']}%)\n"
+        message_text += f"{token} | {token_info['token_amount']} | {token_info['token_value']}$ | \
+        {token_info['financial_results']}$ ({token_info['financial_results_percentages']}%)\n"
         message_text += '-----------------------------------\n'
     await message.answer(message_text)
 
@@ -66,6 +66,10 @@ async def add_new_token_in_database(message: types.Message, state: FSMContext):
     elif message.text == "Купить":
         await state.update_data(action='buy')
         await state.set_state(Actions.buy_token)
+    elif message.text == 'Вернуться':
+        await state.finish()
+        sent_message = await bot.send_message(chat_id=message.from_user.id, text='Возврат в главное меню', reply_markup=main_keyboard)
+        return None
     else:
         await state.update_data(action='sell')
         await state.set_state(Actions.sell_token)

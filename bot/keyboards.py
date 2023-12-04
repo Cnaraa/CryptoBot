@@ -5,6 +5,6 @@ main_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
 main_keyboard.add(main_buttons[0], main_buttons[1])
 
 
-actions_buttons = ['Купить', 'Продать', 'Депозит']
+actions_buttons = ['Купить', 'Продать', 'Депозит', 'Вернуться']
 actions_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-actions_keyboard.add(actions_buttons[0], actions_buttons[1]).add(actions_buttons[2])
+actions_keyboard.add(actions_buttons[0], actions_buttons[1], actions_buttons[2]).add(actions_buttons[3])
