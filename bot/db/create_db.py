@@ -148,12 +148,19 @@ def get_user_portfolio(user_id):
     cursor.execute("""
         SELECT * FROM users_portfolio WHERE user_id = (?)
 """, (user_id, ))
+    user_tokens = cursor.fetchall()
+    cursor.execute("""
+        SELECT * FROM tokens_price
+""")
     result = cursor.fetchall()
+    tokens_price = {}
+    for token in result:
+      tokens_price[token[0]] = token[1]
     user_portfolio = {}
     token = {}
-    for token_info in result:
+    for token_info in user_tokens:
       token['token_amount'] = token_info[3]
-      last_token_price = check_token(token_info[2])
+      last_token_price = tokens_price[token_info[2]]
       token_value = round(token_info[3] * last_token_price, 2)
       token['token_value'] = token_value
       token['financial_results'] = ((token_value - (token_info[3] * token_info[4])) / (token_info[3] * token_info[4]))
