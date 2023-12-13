@@ -62,30 +62,33 @@ def check_token_in_portfolio(new_token):
           SELECT token_amount FROM users_portfolio WHERE user_id = (?) and token_name = (?)
 """, (new_token['user_id'], 'USDT'))
       result = cursor.fetchone()
-      if result[0] > (new_token['token_price'] * new_token['token_amount']):
-        cursor.execute("""
-            UPDATE users_portfolio SET token_amount = (?), average_price = (?) WHERE user_id = (?) and token_name = (?)
-""", (result[0] - (new_token['token_price'] * new_token['token_amount']),
-      1.0,
-      new_token['user_id'],
-      'USDT',))
-        connection.commit()
-        cursor.execute("""
-            SELECT * FROM users_portfolio WHERE user_id = (?) and token_name = (?) 
-""", (new_token['user_id'], new_token['token_name']))  
-        result = cursor.fetchone()
-        if result: # TODO - repeat func
-          token_amount = result[3] + new_token['token_amount']
-          average_price = round(((result[4]*result[3]) + (new_token['token_amount'] * new_token['token_price'])) / (result[3] + new_token['token_amount']), 2)
+      if result is None:
+        return False
+      else:
+        if result[0] > (new_token['token_price'] * new_token['token_amount']):
           cursor.execute("""
               UPDATE users_portfolio SET token_amount = (?), average_price = (?) WHERE user_id = (?) and token_name = (?)
-    """, (token_amount, average_price, new_token['user_id'], new_token['token_name']))
+  """, (result[0] - (new_token['token_price'] * new_token['token_amount']),
+        1.0,
+        new_token['user_id'],
+        'USDT',))
           connection.commit()
+          cursor.execute("""
+              SELECT * FROM users_portfolio WHERE user_id = (?) and token_name = (?) 
+  """, (new_token['user_id'], new_token['token_name']))  
+          result = cursor.fetchone()
+          if result: 
+            token_amount = result[3] + new_token['token_amount']
+            average_price = round(((result[4]*result[3]) + (new_token['token_amount'] * new_token['token_price'])) / (result[3] + new_token['token_amount']), 2)
+            cursor.execute("""
+                UPDATE users_portfolio SET token_amount = (?), average_price = (?) WHERE user_id = (?) and token_name = (?)
+      """, (token_amount, average_price, new_token['user_id'], new_token['token_name']))
+            connection.commit()
+          else:
+            add_new_token(new_token)
+          return True
         else:
-          add_new_token(new_token)
-        return True
-      else:
-        return False
+          return False
     else:
       cursor.execute("""
           SELECT * FROM users_portfolio WHERE user_id = (?) and token_name = (?)
@@ -117,29 +120,32 @@ def sell_token(new_token):
     cursor.execute("""
         SELECT token_amount FROM users_portfolio WHERE user_id = (?) and token_name = (?)
 """, (new_token['user_id'], new_token['token_name']))
-    result = cursor.fetchone() #TODO - добавить проверку
-    cursor.execute("""
-        UPDATE users_portfolio SET token_amount = (?) WHERE user_id = (?) and token_name = (?) 
-""", ((result[0] - new_token['token_amount']),
-      new_token['user_id'], new_token['token_name']))
-    connection.commit()
-    cursor.execute("""
-        SELECT token_amount FROM users_portfolio WHERE user_id = (?) and token_name = (?)
-""", (new_token['user_id'], 'USDT'))
     result = cursor.fetchone()
-    if result: # TODO
+    if result[0] >= new_token['token_amount']:
       cursor.execute("""
-          UPDATE users_portfolio SET token_amount = (?) WHERE user_id = (?) and token_name = (?)
-""", (result[0] + (new_token['token_amount'] * new_token['token_price']),
-      new_token['user_id'], 'USDT'))
+          UPDATE users_portfolio SET token_amount = (?) WHERE user_id = (?) and token_name = (?) 
+  """, ((result[0] - new_token['token_amount']),
+        new_token['user_id'], new_token['token_name']))
       connection.commit()
-    else:
       cursor.execute("""
-          INSERT INTO users_portfolio (id, user_id, token_name, token_amount, average_price)
-          VALUES (NULL, ?, ?, ?, ?)
-  """, (new_token['user_id'], 'USDT', (new_token['token_amount'] * new_token['token_price']), 1.0))
-    connection.commit()
-  return True
+          SELECT token_amount FROM users_portfolio WHERE user_id = (?) and token_name = (?)
+  """, (new_token['user_id'], 'USDT'))
+      result = cursor.fetchone()
+      if result:
+        cursor.execute("""
+            UPDATE users_portfolio SET token_amount = (?) WHERE user_id = (?) and token_name = (?)
+  """, (result[0] + (new_token['token_amount'] * new_token['token_price']),
+        new_token['user_id'], 'USDT'))
+        connection.commit()
+      else:
+        cursor.execute("""
+            INSERT INTO users_portfolio (id, user_id, token_name, token_amount, average_price)
+            VALUES (NULL, ?, ?, ?, ?)
+    """, (new_token['user_id'], 'USDT', (new_token['token_amount'] * new_token['token_price']), 1.0))
+      connection.commit()
+      return True
+    else:
+      return False
 
 
 def get_user_portfolio(user_id):
@@ -168,5 +174,4 @@ def get_user_portfolio(user_id):
       token['financial_results'] = round((token_info[3] * token_info[4]) * token['financial_results'], 2)
       user_portfolio[token_info[2]] = token
       token = {}
-    print(user_portfolio)
     return user_portfolio
