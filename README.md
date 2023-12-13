@@ -1,4 +1,4 @@
-Логическая диаграмма (Продать) - https://drive.google.com/file/d/1ft80e473pa_x-LjBVRM3bCZdfVkTYZiz/view?usp=sharing
+Логическая диаграмма (Продать) - https://drive.google.com/file/d/1ft80e473pa_x-LjBVRM3bCZdfVkTYZiz/view?usp=sharing<br/> 
 Концептуальная диаграмма - https://drive.google.com/file/d/1n1TP_6TahVk6d_wrqX0iJSOWkIB6axy1/view?usp=sharing
 DFD диаграмма - https://drive.google.com/file/d/1djWsQBIPQSItwc6F-rS3nY429GSqxExX/view?usp=sharing
 ER диаграмма (база данных) - https://drive.google.com/file/d/1OBKsROGvtvTgXg3s_T4nDvtYsrPQAFMM/view?usp=sharing
